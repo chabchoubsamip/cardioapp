@@ -1,21 +1,20 @@
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 import sqlite3
 import json
 from datetime import datetime
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Autorise la page HTML locale à parler au backend
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# Sert le fichier index.html
+@app.get("/")
+def home():
+    return FileResponse("index.html")
 
+
+# Base SQLite
 DB = "database.db"
 
 def init_db():
@@ -33,6 +32,7 @@ def init_db():
 
 init_db()
 
+
 class Fiche(BaseModel):
     administratif: dict
     motif_consultation: dict
@@ -40,9 +40,6 @@ class Fiche(BaseModel):
     antecedents_cardio: dict
     consentement: dict
 
-@app.get("/")
-def home():
-    return {"message": "Backend OK"}
 
 @app.post("/submit")
 def submit_fiche(fiche: Fiche):
@@ -55,12 +52,3 @@ def submit_fiche(fiche: Fiche):
     conn.commit()
     conn.close()
     return {"status": "fiche enregistrée"}
-
-@app.get("/fiches")
-def get_fiches():
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("SELECT * FROM fiches ORDER BY id DESC")
-    rows = c.fetchall()
-    conn.close()
-    return rows

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche Pré-Consultation Cardiologique</title>
+
+<style>
+body { font-family: Arial; margin:40px; background:#f4f6f9;}
+.container {background:white; padding:30px; max-width:900px; margin:auto; border-radius:8px;}
+.section {margin-bottom:30px;}
+h2 {border-bottom:2px solid #0077cc;}
+.motif {margin-bottom:25px; font-size:18px;}
+.block {margin-top:15px; padding:15px; border-left:4px solid #0077cc;}
+button {padding:12px; background:#0077cc; color:white; border:none; margin-top:20px;}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Fiche Initiale de Pré-Consultation Cardiologique</h1>
+
+<form id="form">
+
+<!-- A ADMIN -->
+<div class="section">
+<h2>A — Administratif</h2>
+Nom : <input name="nom"><br><br>
+Prénom : <input name="prenom"><br><br>
+Sexe :
+<select name="sexe">
+<option>Homme</option>
+<option>Femme</option>
+<option>Autre</option>
+</select><br><br>
+Date de naissance : <input type="date" name="naissance"><br><br>
+Téléphone : <input name="telephone"><br><br>
+Email : <input name="email"><br>
+</div>
+
+
+<!-- B MOTIF -->
+<div class="section">
+<h2>B — Motif de la consultation</h2>
+
+<div class="motif">
+<label>
+<input type="radio" name="motif" value="prevention" required>
+<b>Consultation de prévention :</b><br>
+Je me sens bien. Pas de problème cardiaque connu. Je souhaite un bilan.
+</label>
+</div>
+
+<div class="motif">
+<label>
+<input type="radio" name="motif" value="demande_medecin" id="motif_medecin">
+<b>Consultation à la demande d’un médecin :</b><br>
+Bilan demandé par un médecin (préopératoire, spécialiste, etc.)
+</label>
+
+<div id="commentaire_medecin" style="display:none;" class="block">
+<b>Préciser obligatoirement :</b><br>
+<textarea name="commentaire_medecin" rows="3" style="width:100%;"></textarea>
+</div>
+</div>
+
+<div class="motif">
+<label>
+<input type="radio" name="motif" value="suivi">
+<b>Suivi d’un problème cardiaque connu :</b><br>
+Arythmie, stent, valve, chirurgie cardiaque ou autre pathologie connue.
+</label>
+</div>
+
+<div class="motif">
+<label>
+<input type="radio" name="motif" value="symptomes" id="motif_symptomes">
+<b>Je ne me sens pas bien :</b><br>
+Présence de symptômes pouvant évoquer un problème cardiaque.
+</label>
+
+<div id="symptomes_block" style="display:none;" class="block">
+
+<b>Choisir impérativement au moins un symptôme :</b><br><br>
+
+<label><input type="checkbox" name="douleur"> Mal dans la poitrine</label><br>
+<label><input type="checkbox" name="dyspnee"> Essoufflement</label><br>
+<label><input type="checkbox" name="palpitations"> Palpitations fréquentes</label><br>
+<label><input type="checkbox" name="syncope"> Perte de connaissance récente</label><br>
+
+</div>
+</div>
+
+</div>
+
+
+<!-- C FRCV -->
+<div class="section">
+<h2>C — Facteurs de Risque Cardiovasculaire</h2>
+
+<b>Tabagisme actuel ou sevré &lt; 15 ans :</b><br>
+<label><input type="radio" name="tabac" value="oui" required> Oui</label>
+<label><input type="radio" name="tabac" value="non"> Non</label><br><br>
+
+<b>Hypertension ou traitement anti-HTA :</b><br>
+<label><input type="radio" name="hta" value="oui" required> Oui</label>
+<label><input type="radio" name="hta" value="non"> Non</label><br><br>
+
+<b>Diabète ou traitement antidiabétique :</b><br>
+<label><input type="radio" name="diabete" value="oui" required> Oui</label>
+<label><input type="radio" name="diabete" value="non"> Non</label><br><br>
+
+<b>Cholestérol ou traitement hypolipémiant :</b><br>
+<label><input type="radio" name="cholesterol" value="oui" required> Oui</label>
+<label><input type="radio" name="cholesterol" value="non"> Non</label><br><br>
+
+<b>Antécédents familiaux cardiovasculaires :</b><br>
+<label><input type="radio" name="familial" value="oui" required> Oui</label>
+<label><input type="radio" name="familial" value="non"> Non</label>
+
+</div>
+
+
+<button type="submit">Envoyer la fiche</button>
+
+</form>
+</div>
+
+
+<script>
+
+// Affichage dynamique
+document.querySelectorAll('input[name="motif"]').forEach(function(radio){
+    radio.addEventListener("change", function(){
+
+        document.getElementById("symptomes_block").style.display =
+            document.getElementById("motif_symptomes").checked ? "block" : "none";
+
+        document.getElementById("commentaire_medecin").style.display =
+            document.getElementById("motif_medecin").checked ? "block" : "none";
+    });
+});
+
+
+// Validation + envoi backend
+document.getElementById("form").addEventListener("submit", async function(e){
+    e.preventDefault();
+
+    const f = e.target;
+    const motif = document.querySelector('input[name="motif"]:checked');
+
+    if (!motif){
+        alert("Veuillez sélectionner un motif.");
+        return;
+    }
+
+    if (motif.value === "demande_medecin" && !f.commentaire_medecin.value.trim()){
+        alert("Merci de préciser la demande médicale.");
+        return;
+    }
+
+    if (motif.value === "symptomes"){
+        if (!f.douleur.checked && !f.dyspnee.checked && !f.palpitations.checked && !f.syncope.checked){
+            alert("Veuillez cocher au moins un symptôme.");
+            return;
+        }
+    }
+
+    const data = {
+        administratif:{
+            nom:f.nom.value,
+            prenom:f.prenom.value,
+            sexe:f.sexe.value,
+            naissance:f.naissance.value,
+            telephone:f.telephone.value,
+            email:f.email.value
+        },
+        motif_consultation:{
+            motif:motif.value,
+            commentaire_medecin:f.commentaire_medecin.value,
+            douleur:f.douleur.checked,
+            dyspnee:f.dyspnee.checked,
+            palpitations:f.palpitations.checked,
+            syncope:f.syncope.checked
+        },
+        facteurs_risque:{
+            tabac:f.tabac.value,
+            hta:f.hta.value,
+            diabete:f.diabete.value,
+            cholesterol:f.cholesterol.value,
+            familial:f.familial.value
+        },
+        antecedents_cardio:{},
+        consentement:{ok:true}
+    };
+
+    await fetch("http://127.0.0.1:8000/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(data)
+    });
+
+    alert("Fiche envoyée.");
+});
+
+</script>
+
+</body>
+</html>
