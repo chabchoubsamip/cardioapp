@@ -77,12 +77,12 @@ Antécédents familiaux :
 <div class="section">
 <h2>D — Antécédents cardiovasculaires</h2>
 
-<label><input type="checkbox" name="ac_arhythmie"> Arythmie (Fibrillation atriale…)</label><br>
+<label><input type="checkbox" name="ac_arhythmie"> Arythmie</label><br>
 <label><input type="checkbox" name="ac_infarctus"> Infarctus / stent / pontage</label><br>
 <label><input type="checkbox" name="ac_ic"> Insuffisance cardiaque</label><br>
 <label><input type="checkbox" name="ac_valve"> Problème de valve</label><br>
-<label><input type="checkbox" name="ac_aorte"> Aorte dilatée non opérée</label><br>
-<label><input type="checkbox" name="ac_chirurgie"> Chirurgie cardiaque ancienne</label><br>
+<label><input type="checkbox" name="ac_aorte"> Aorte dilatée</label><br>
+<label><input type="checkbox" name="ac_chirurgie"> Chirurgie cardiaque</label><br>
 <label><input type="checkbox" name="ac_mtev"> Maladie thrombo-embolique</label><br><br>
 
 Commentaire :<br>
@@ -143,7 +143,12 @@ document.getElementById("form").addEventListener("submit", async function(e){
     });
 
     const result = await res.json();
-    alert(result.status);
+
+    if(result.pdf_url){
+        window.location.href = result.pdf_url;   // télécharge PDF
+    } else {
+        alert("Erreur génération PDF");
+    }
 
 });
 

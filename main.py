@@ -7,6 +7,17 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from email.message import EmailMessage
 import os
+from fastapi.responses import FileResponse
+import os
+
+@app.get("/pdf/{filename}")
+def get_pdf(filename: str):
+    path = os.path.join(".", filename)
+    if os.path.exists(path):
+        return FileResponse(path, media_type="application/pdf", filename=filename)
+    return {"error": "PDF non trouvé"}
+
+
 
 app = FastAPI()
 
@@ -115,6 +126,9 @@ def send_email(pdf_path):
 # -----------------------------
 # SUBMIT
 # -----------------------------
+from fastapi.responses import JSONResponse
+import uuid
+
 @app.post("/submit")
 def submit_fiche(fiche: Fiche):
 
@@ -130,10 +144,12 @@ def submit_fiche(fiche: Fiche):
     conn.commit()
     conn.close()
 
-    # PDF
-    pdf_file = generate_pdf(data)
+    # Génère PDF avec nom unique
+    pdf_name = f"fiche_{uuid.uuid4().hex}.pdf"
+    generate_pdf(data, pdf_name)
 
-    # Email
-    send_email(pdf_file)
-
-    return {"status": "fiche envoyée par email"}
+    # Retourne lien de téléchargement
+    return JSONResponse({
+        "status": "ok",
+        "pdf_url": f"/pdf/{pdf_name}"
+    })
