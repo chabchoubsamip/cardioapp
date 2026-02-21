@@ -1,32 +1,12 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
-import sqlite3, json, smtplib
+import sqlite3, json, os, uuid
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-from email.message import EmailMessage
-import os
-from fastapi.responses import FileResponse
-import os
-
-@app.get("/pdf/{filename}")
-def get_pdf(filename: str):
-    path = os.path.join(".", filename)
-    if os.path.exists(path):
-        return FileResponse(path, media_type="application/pdf", filename=filename)
-    return {"error": "PDF non trouvé"}
-
-
 
 app = FastAPI()
-
-# -----------------------------
-# CONFIG EMAIL
-# -----------------------------
-EMAIL_SENDER = "chabchoubsamip@gmail.com"
-EMAIL_PASSWORD = "vvom aifo epkd yazs"
-EMAIL_RECEIVER = "chabchoubsamip@gmail.com"
 
 # -----------------------------
 # SERVE INDEX
@@ -34,6 +14,16 @@ EMAIL_RECEIVER = "chabchoubsamip@gmail.com"
 @app.get("/")
 def home():
     return FileResponse("index.html")
+
+# -----------------------------
+# ROUTE TELECHARGEMENT PDF
+# -----------------------------
+@app.get("/pdf/{filename}")
+def get_pdf(filename: str):
+    path = os.path.join(".", filename)
+    if os.path.exists(path):
+        return FileResponse(path, media_type="application/pdf", filename=filename)
+    return {"error": "PDF non trouvé"}
 
 # -----------------------------
 # DB
@@ -69,12 +59,10 @@ class Fiche(BaseModel):
 # -----------------------------
 # GENERATION PDF
 # -----------------------------
-def generate_pdf(data):
+def generate_pdf(data, filename):
 
-    filename = "fiche.pdf"
     c = canvas.Canvas(filename, pagesize=letter)
     y = 750
-
     c.setFont("Helvetica", 11)
 
     c.drawString(50, y, "FICHE PRE-CONSULTATION CARDIOLOGIQUE")
@@ -98,37 +86,10 @@ def generate_pdf(data):
         y -= 15
 
     c.save()
-    return filename
-
-# -----------------------------
-# EMAIL
-# -----------------------------
-def send_email(pdf_path):
-
-    msg = EmailMessage()
-    msg["Subject"] = "Nouvelle fiche patient"
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECEIVER
-    msg.set_content("Fiche en pièce jointe.")
-
-    with open(pdf_path, "rb") as f:
-        msg.add_attachment(
-            f.read(),
-            maintype="application",
-            subtype="pdf",
-            filename="fiche.pdf"
-        )
-
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        smtp.send_message(msg)
 
 # -----------------------------
 # SUBMIT
 # -----------------------------
-from fastapi.responses import JSONResponse
-import uuid
-
 @app.post("/submit")
 def submit_fiche(fiche: Fiche):
 
@@ -144,11 +105,10 @@ def submit_fiche(fiche: Fiche):
     conn.commit()
     conn.close()
 
-    # Génère PDF avec nom unique
+    # Génère PDF
     pdf_name = f"fiche_{uuid.uuid4().hex}.pdf"
     generate_pdf(data, pdf_name)
 
-    # Retourne lien de téléchargement
     return JSONResponse({
         "status": "ok",
         "pdf_url": f"/pdf/{pdf_name}"
