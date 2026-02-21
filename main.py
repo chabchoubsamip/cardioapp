@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from pydantic import BaseModel
 import sqlite3, json, os, uuid
 from datetime import datetime
@@ -24,6 +24,24 @@ def get_pdf(filename: str):
     if os.path.exists(path):
         return FileResponse(path, media_type="application/pdf", filename=filename)
     return {"error": "PDF non trouvé"}
+
+# -----------------------------
+# DASHBOARD SIMPLE
+# -----------------------------
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    files = [f for f in os.listdir(".") if f.startswith("fiche_") and f.endswith(".pdf")]
+    files.sort(reverse=True)
+
+    html = "<h1>Fiches reçues</h1>"
+
+    if not files:
+        html += "<p>Aucune fiche reçue.</p>"
+
+    for f in files:
+        html += f'<p><a href="/pdf/{f}">{f}</a></p>'
+
+    return html
 
 # -----------------------------
 # DB
@@ -85,6 +103,14 @@ def generate_pdf(data, filename):
         c.drawString(60, y, f"{k} : {v}")
         y -= 15
 
+    y -= 20
+    c.drawString(50, y, "Antécédents cardiovasculaires :")
+    y -= 20
+
+    for k, v in data['antecedents_cardio'].items():
+        c.drawString(60, y, f"{k} : {v}")
+        y -= 15
+
     c.save()
 
 # -----------------------------
@@ -95,7 +121,7 @@ def submit_fiche(fiche: Fiche):
 
     data = fiche.dict()
 
-    # Sauvegarde DB
+    # Sauvegarde base
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     c.execute(
@@ -105,7 +131,7 @@ def submit_fiche(fiche: Fiche):
     conn.commit()
     conn.close()
 
-    # Génère PDF
+    # Génère PDF unique
     pdf_name = f"fiche_{uuid.uuid4().hex}.pdf"
     generate_pdf(data, pdf_name)
 
