@@ -121,6 +121,32 @@ Présence de symptômes pouvant évoquer un problème cardiaque.
 </div>
 
 
+<!-- D ANTECEDENTS CARDIO -->
+<div class="section">
+<h2>D — Antécédents cardiovasculaires</h2>
+
+<label><input type="checkbox" name="ac_arhythmie"> Arythmie (Fibrillation atriale…)</label><br>
+<label><input type="checkbox" name="ac_infarctus"> Infarctus du myocarde, stent coronaire, pontage</label><br>
+<label><input type="checkbox" name="ac_ic"> Insuffisance cardiaque</label><br>
+<label><input type="checkbox" name="ac_valve"> Problème de valve (souffle, remplacement, TAVI, Clip…)</label><br>
+<label><input type="checkbox" name="ac_aorte"> Aorte dilatée non opérée</label><br>
+<label><input type="checkbox" name="ac_chirurgie"> Chirurgie cardiaque ancienne</label><br>
+<label><input type="checkbox" name="ac_mtev"> Maladie veineuse thrombo-embolique</label><br><br>
+
+<b>Commentaire (1 phrase) :</b><br>
+<input type="text" name="ac_commentaire" style="width:100%;">
+</div>
+
+<div class="section">
+<h2>E — Ordonnance / Traitement</h2>
+
+<input type="file" id="ordo_file" accept="image/*" capture="environment"><br><br>
+
+<button type="button" onclick="uploadOrdo()">Scanner l’ordonnance</button>
+
+<div id="ordo_result" style="margin-top:10px; color:green;"></div>
+</div>
+
 <button type="submit">Envoyer la fiche</button>
 
 </form>
@@ -191,6 +217,7 @@ document.getElementById("form").addEventListener("submit", async function(e){
             familial:f.familial.value
         },
         antecedents_cardio:{},
+        traitement_ocr: window.traitement_ocr || "",
         consentement:{ok:true}
     };
 
@@ -204,6 +231,32 @@ document.getElementById("form").addEventListener("submit", async function(e){
 });
 
 </script>
+
+async function uploadOrdo(){
+
+    const fileInput = document.getElementById("ordo_file");
+    if (!fileInput.files.length){
+        alert("Veuillez prendre une photo de l’ordonnance");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    document.getElementById("ordo_result").innerText = "Analyse OCR en cours...";
+
+    const res = await fetch("/upload-ordo", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await res.json();
+
+    document.getElementById("ordo_result").innerText =
+        "Traitement détecté : " + data.traitement;
+
+    window.traitement_ocr = data.traitement;
+}
 
 </body>
 </html>
