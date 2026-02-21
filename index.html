@@ -245,7 +245,7 @@ async function uploadOrdo(){
 
     document.getElementById("ordo_result").innerText = "Analyse OCR en cours...";
 
-    const res = await fetch("/upload-ordo", {
+    const res = await fetch("https://abcd1234.ngrok-free.app/ocr", {
         method: "POST",
         body: formData
     });
