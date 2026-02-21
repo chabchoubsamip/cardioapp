@@ -1,93 +1,96 @@
-from fastapi import FastAPI
-from fastapi.responses import FileResponse
-from pydantic import BaseModel
-import sqlite3, json, uuid
-from datetime import datetime
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Fiche Pré-Consultation Cardiologique</title>
 
-app = FastAPI()
+<style>
+body { font-family: Arial; margin:40px; background:#f4f6f9;}
+.container {background:white; padding:30px; max-width:900px; margin:auto; border-radius:8px;}
+.section {margin-bottom:30px;}
+h2 {border-bottom:2px solid #0077cc;}
+button {padding:12px; background:#0077cc; color:white; border:none; margin-top:20px;}
+</style>
+</head>
 
-@app.get("/")
-def home():
-    return FileResponse("index.html")
+<body>
 
-DB = "database.db"
+<div class="container">
+<h1>Fiche Pré-Consultation Cardiologique</h1>
 
-def init_db():
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS fiches (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        date TEXT,
-        data TEXT
-    )
-    """)
-    conn.commit()
-    conn.close()
+<form id="form">
 
-init_db()
+<div class="section">
+<h2>Administratif</h2>
+Nom <input name="nom" required><br><br>
+Prénom <input name="prenom" required><br><br>
+Date naissance <input type="date" name="naissance" required><br>
+</div>
 
-class Fiche(BaseModel):
-    administratif: dict
-    motif_consultation: dict
-    facteurs_risque: dict
-    antecedents_cardio: dict
-    traitement_ocr: str = ""
-    consentement: dict
+<div class="section">
+<h2>Motif</h2>
+<label><input type="radio" name="motif" value="consultation" required> Consultation</label>
+</div>
 
-def generate_pdf(data, filename):
+<div class="section">
+<h2>Facteurs de risque</h2>
+Tabac <select name="tabac"><option>oui</option><option>non</option></select><br>
+HTA <select name="hta"><option>oui</option><option>non</option></select>
+</div>
 
-    c = canvas.Canvas(filename, pagesize=letter)
-    y = 750
-    c.setFont("Helvetica", 11)
+<div class="section">
+<h2>Antécédents cardiovasculaires</h2>
+<label><input type="checkbox" name="ac_arhythmie"> Arythmie</label><br>
+<label><input type="checkbox" name="ac_infarctus"> Infarctus</label><br>
+Commentaire <input name="ac_commentaire">
+</div>
 
-    c.drawString(50, y, "FICHE PRE-CONSULTATION CARDIOLOGIQUE")
-    y -= 40
+<button type="submit">Envoyer la fiche</button>
 
-    c.drawString(50, y, f"Nom : {data['administratif']['nom']}")
-    y -= 20
-    c.drawString(50, y, f"Prénom : {data['administratif']['prenom']}")
-    y -= 20
-    c.drawString(50, y, f"Date naissance : {data['administratif']['naissance']}")
-    y -= 30
+</form>
+</div>
 
-    c.drawString(50, y, f"Motif : {data['motif_consultation']['motif']}")
-    y -= 30
+<script>
+document.getElementById("form").addEventListener("submit", async function(e){
 
-    c.drawString(50, y, "Facteurs de risque :")
-    y -= 20
+    e.preventDefault();
+    const f = e.target;
 
-    for k, v in data['facteurs_risque'].items():
-        c.drawString(50, y, f"{k} : {v}")
-        y -= 15
+    const motif = document.querySelector('input[name="motif"]:checked');
 
-    y -= 20
-    c.drawString(50, y, "Antécédents cardiovasculaires :")
-    y -= 20
+    const data = {
+        administratif:{
+            nom:f.nom.value,
+            prenom:f.prenom.value,
+            naissance:f.naissance.value
+        },
+        motif_consultation:{
+            motif:motif ? motif.value : ""
+        },
+        facteurs_risque:{
+            tabac:f.tabac.value,
+            hta:f.hta.value
+        },
+        antecedents_cardio:{
+            arythmie:f.ac_arhythmie.checked,
+            infarctus:f.ac_infarctus.checked,
+            commentaire:f.ac_commentaire.value
+        },
+        traitement_ocr:"",
+        consentement:{ok:true}
+    };
 
-    for k, v in data['antecedents_cardio'].items():
-        c.drawString(50, y, f"{k} : {v}")
-        y -= 15
+    const res = await fetch("/submit",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(data)
+    });
 
-    c.save()
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    window.location.href = url;
+});
+</script>
 
-@app.post("/submit")
-def submit_fiche(fiche: Fiche):
-
-    data = fiche.dict()
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute(
-        "INSERT INTO fiches (date, data) VALUES (?, ?)",
-        (datetime.now().isoformat(), json.dumps(data))
-    )
-    conn.commit()
-    conn.close()
-
-    pdf_name = f"fiche_{uuid.uuid4().hex}.pdf"
-    generate_pdf(data, pdf_name)
-
-    return FileResponse(pdf_name, media_type="application/pdf", filename="fiche.pdf")
+</body>
+</html>
