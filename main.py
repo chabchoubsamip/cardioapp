@@ -1,51 +1,17 @@
 from fastapi import FastAPI
-from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
-import sqlite3, json, os, uuid
+import sqlite3, json, uuid
 from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 
 app = FastAPI()
 
-# -----------------------------
-# SERVE INDEX
-# -----------------------------
 @app.get("/")
 def home():
     return FileResponse("index.html")
 
-# -----------------------------
-# ROUTE TELECHARGEMENT PDF
-# -----------------------------
-@app.get("/pdf/{filename}")
-def get_pdf(filename: str):
-    path = os.path.join(".", filename)
-    if os.path.exists(path):
-        return FileResponse(path, media_type="application/pdf", filename=filename)
-    return {"error": "PDF non trouvé"}
-
-# -----------------------------
-# DASHBOARD SIMPLE
-# -----------------------------
-@app.get("/dashboard", response_class=HTMLResponse)
-def dashboard():
-    files = [f for f in os.listdir(".") if f.startswith("fiche_") and f.endswith(".pdf")]
-    files.sort(reverse=True)
-
-    html = "<h1>Fiches reçues</h1>"
-
-    if not files:
-        html += "<p>Aucune fiche reçue.</p>"
-
-    for f in files:
-        html += f'<p><a href="/pdf/{f}">{f}</a></p>'
-
-    return html
-
-# -----------------------------
-# DB
-# -----------------------------
 DB = "database.db"
 
 def init_db():
@@ -63,9 +29,6 @@ def init_db():
 
 init_db()
 
-# -----------------------------
-# MODELE
-# -----------------------------
 class Fiche(BaseModel):
     administratif: dict
     motif_consultation: dict
@@ -74,9 +37,6 @@ class Fiche(BaseModel):
     traitement_ocr: str = ""
     consentement: dict
 
-# -----------------------------
-# GENERATION PDF
-# -----------------------------
 def generate_pdf(data, filename):
 
     c = canvas.Canvas(filename, pagesize=letter)
@@ -100,7 +60,7 @@ def generate_pdf(data, filename):
     y -= 20
 
     for k, v in data['facteurs_risque'].items():
-        c.drawString(60, y, f"{k} : {v}")
+        c.drawString(50, y, f"{k} : {v}")
         y -= 15
 
     y -= 20
@@ -108,20 +68,16 @@ def generate_pdf(data, filename):
     y -= 20
 
     for k, v in data['antecedents_cardio'].items():
-        c.drawString(60, y, f"{k} : {v}")
+        c.drawString(50, y, f"{k} : {v}")
         y -= 15
 
     c.save()
 
-# -----------------------------
-# SUBMIT
-# -----------------------------
 @app.post("/submit")
 def submit_fiche(fiche: Fiche):
 
     data = fiche.dict()
 
-    # Sauvegarde base
     conn = sqlite3.connect(DB)
     c = conn.cursor()
     c.execute(
@@ -131,11 +87,7 @@ def submit_fiche(fiche: Fiche):
     conn.commit()
     conn.close()
 
-    # Génère PDF unique
     pdf_name = f"fiche_{uuid.uuid4().hex}.pdf"
     generate_pdf(data, pdf_name)
 
-    return JSONResponse({
-        "status": "ok",
-        "pdf_url": f"/pdf/{pdf_name}"
-    })
+    return FileResponse(pdf_name, media_type="application/pdf", filename="fiche.pdf")

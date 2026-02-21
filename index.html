@@ -16,77 +16,33 @@ button {padding:12px; background:#0077cc; color:white; border:none; margin-top:2
 <body>
 
 <div class="container">
-<h1>Fiche Initiale de Pré-Consultation Cardiologique</h1>
+<h1>Fiche Pré-Consultation Cardiologique</h1>
 
 <form id="form">
 
-<!-- A ADMIN -->
 <div class="section">
-<h2>A — Administratif</h2>
-Nom : <input name="nom" required><br><br>
-Prénom : <input name="prenom" required><br><br>
-Sexe :
-<select name="sexe">
-<option>Homme</option>
-<option>Femme</option>
-<option>Autre</option>
-</select><br><br>
-Date de naissance : <input type="date" name="naissance" required><br><br>
-Téléphone : <input name="telephone"><br><br>
-Email : <input name="email"><br>
+<h2>Administratif</h2>
+Nom <input name="nom" required><br><br>
+Prénom <input name="prenom" required><br><br>
+Date naissance <input type="date" name="naissance" required><br>
 </div>
 
-<!-- B MOTIF -->
 <div class="section">
-<h2>B — Motif de la consultation</h2>
-
-<label><input type="radio" name="motif" value="prevention" required> Consultation de prévention</label><br>
-<label><input type="radio" name="motif" value="demande_medecin"> Consultation à la demande d’un médecin</label><br>
-<label><input type="radio" name="motif" value="suivi"> Suivi d’un problème cardiaque connu</label><br>
-<label><input type="radio" name="motif" value="symptomes"> Présence de symptômes</label><br>
-
+<h2>Motif</h2>
+<label><input type="radio" name="motif" value="consultation" required> Consultation</label>
 </div>
 
-<!-- C FRCV -->
 <div class="section">
-<h2>C — Facteurs de Risque Cardiovasculaire</h2>
-
-Tabagisme :
-<label><input type="radio" name="tabac" value="oui" required> Oui</label>
-<label><input type="radio" name="tabac" value="non"> Non</label><br><br>
-
-Hypertension :
-<label><input type="radio" name="hta" value="oui" required> Oui</label>
-<label><input type="radio" name="hta" value="non"> Non</label><br><br>
-
-Diabète :
-<label><input type="radio" name="diabete" value="oui" required> Oui</label>
-<label><input type="radio" name="diabete" value="non"> Non</label><br><br>
-
-Cholestérol :
-<label><input type="radio" name="cholesterol" value="oui" required> Oui</label>
-<label><input type="radio" name="cholesterol" value="non"> Non</label><br><br>
-
-Antécédents familiaux :
-<label><input type="radio" name="familial" value="oui" required> Oui</label>
-<label><input type="radio" name="familial" value="non"> Non</label>
-
+<h2>Facteurs de risque</h2>
+Tabac <select name="tabac"><option>oui</option><option>non</option></select><br>
+HTA <select name="hta"><option>oui</option><option>non</option></select>
 </div>
 
-<!-- D ANTECEDENTS CARDIO -->
 <div class="section">
-<h2>D — Antécédents cardiovasculaires</h2>
-
+<h2>Antécédents cardiovasculaires</h2>
 <label><input type="checkbox" name="ac_arhythmie"> Arythmie</label><br>
-<label><input type="checkbox" name="ac_infarctus"> Infarctus / stent / pontage</label><br>
-<label><input type="checkbox" name="ac_ic"> Insuffisance cardiaque</label><br>
-<label><input type="checkbox" name="ac_valve"> Problème de valve</label><br>
-<label><input type="checkbox" name="ac_aorte"> Aorte dilatée</label><br>
-<label><input type="checkbox" name="ac_chirurgie"> Chirurgie cardiaque</label><br>
-<label><input type="checkbox" name="ac_mtev"> Maladie thrombo-embolique</label><br><br>
-
-Commentaire :<br>
-<input type="text" name="ac_commentaire" style="width:100%;">
+<label><input type="checkbox" name="ac_infarctus"> Infarctus</label><br>
+Commentaire <input name="ac_commentaire">
 </div>
 
 <button type="submit">Envoyer la fiche</button>
@@ -95,7 +51,6 @@ Commentaire :<br>
 </div>
 
 <script>
-
 document.getElementById("form").addEventListener("submit", async function(e){
 
     e.preventDefault();
@@ -107,29 +62,18 @@ document.getElementById("form").addEventListener("submit", async function(e){
         administratif:{
             nom:f.nom.value,
             prenom:f.prenom.value,
-            sexe:f.sexe.value,
-            naissance:f.naissance.value,
-            telephone:f.telephone.value,
-            email:f.email.value
+            naissance:f.naissance.value
         },
         motif_consultation:{
             motif:motif ? motif.value : ""
         },
         facteurs_risque:{
             tabac:f.tabac.value,
-            hta:f.hta.value,
-            diabete:f.diabete.value,
-            cholesterol:f.cholesterol.value,
-            familial:f.familial.value
+            hta:f.hta.value
         },
         antecedents_cardio:{
             arythmie:f.ac_arhythmie.checked,
             infarctus:f.ac_infarctus.checked,
-            insuffisance_cardiaque:f.ac_ic.checked,
-            valve:f.ac_valve.checked,
-            aorte:f.ac_aorte.checked,
-            chirurgie:f.ac_chirurgie.checked,
-            mtev:f.ac_mtev.checked,
             commentaire:f.ac_commentaire.value
         },
         traitement_ocr:"",
@@ -142,16 +86,10 @@ document.getElementById("form").addEventListener("submit", async function(e){
         body:JSON.stringify(data)
     });
 
-    const result = await res.json();
-
-    if(result.pdf_url){
-        window.location.href = result.pdf_url;   // télécharge PDF
-    } else {
-        alert("Erreur génération PDF");
-    }
-
+    const blob = await res.blob();
+    const url = window.URL.createObjectURL(blob);
+    window.location.href = url;
 });
-
 </script>
 
 </body>
