@@ -5,13 +5,9 @@ from pydantic import BaseModel
 from reportlab.pdfgen import canvas
 from pathlib import Path
 import uuid
-
-# ==== GOOGLE DRIVE ====
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload
-
-DRIVE_FOLDER_ID = "1ERp9e96G1CnQPjKg70jn4I8fCWh0rlcx"
+import os
+import smtplib
+from email.message import EmailMessage
 
 # ==== APP ====
 app = FastAPI()
@@ -97,40 +93,31 @@ def make_pdf(data, filename):
     c.save()
     return path
 
-# ==== GOOGLE DRIVE ====
-def upload_to_drive(filepath):
-    try:
-        from google.oauth2 import service_account
-        from googleapiclient.discovery import build
-        from googleapiclient.http import MediaFileUpload
+# ==== EMAIL ====
+def send_email(filepath):
+    EMAIL = "gcvcardioapp@gmail.com"
+    PASSWORD = os.environ["EMAIL_PASSWORD"]
 
-        DRIVE_FOLDER_ID = "1ERp9e96G1CnQPjKg70jn4I8fCWh0rlcx"
+    msg = EmailMessage()
+    msg["Subject"] = "Nouvelle fiche patient"
+    msg["From"] = EMAIL
+    msg["To"] = EMAIL
+    msg.set_content("Une nouvelle fiche patient est jointe en PDF.")
 
-        creds = service_account.Credentials.from_service_account_file(
-            "/etc/secrets/service_account.json",
-            scopes=["https://www.googleapis.com/auth/drive"]
+    with open(filepath, "rb") as f:
+        msg.add_attachment(
+            f.read(),
+            maintype="application",
+            subtype="pdf",
+            filename=filepath.name
         )
 
-        service = build("drive", "v3", credentials=creds)
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(EMAIL, PASSWORD)
+        smtp.send_message(msg)
 
-        file_metadata = {
-            "name": filepath.name,
-            "parents": [DRIVE_FOLDER_ID]
-        }
+    print("EMAIL OK")
 
-        media = MediaFileUpload(str(filepath), mimetype="application/pdf")
-
-        service.files().create(
-            body=file_metadata,
-            media_body=media,
-            supportsAllDrives=True   # ← IMPORTANT
-        ).execute()
-
-        print("DRIVE OK")
-
-    except Exception as e:
-        print("DRIVE ERROR:", str(e))
-        
 # ==== ADMIN ====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
@@ -153,5 +140,5 @@ def submit(fiche: Fiche):
     data = fiche.dict()
     filename = f"fiche_{uuid.uuid4().hex}.pdf"
     pdf_path = make_pdf(data, filename)
-    upload_to_drive(pdf_path)
+    send_email(pdf_path)
     return JSONResponse({"status": "ok"})
