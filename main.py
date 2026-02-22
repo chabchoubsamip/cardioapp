@@ -122,13 +122,15 @@ def upload_to_drive(filepath):
 
         service.files().create(
             body=file_metadata,
-            media_body=media
+            media_body=media,
+            supportsAllDrives=True   # ← IMPORTANT
         ).execute()
 
         print("DRIVE OK")
 
     except Exception as e:
         print("DRIVE ERROR:", str(e))
+        
 # ==== ADMIN ====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
