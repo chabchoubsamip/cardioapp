@@ -5,14 +5,12 @@ from pydantic import BaseModel
 from reportlab.pdfgen import canvas
 from pathlib import Path
 import uuid
-import os
 
 # ==== GOOGLE DRIVE ====
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-SERVICE_ACCOUNT_FILE = "service_account.json"
 DRIVE_FOLDER_ID = "1ERp9e96G1CnQPjKg70jn4I8fCWh0rlcx"
 
 # ==== APP ====
@@ -73,25 +71,31 @@ def make_pdf(data, filename):
 
 # ==== GOOGLE DRIVE UPLOAD ====
 def upload_to_drive(filepath):
-    creds = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE,
-        scopes=["https://www.googleapis.com/auth/drive"]
-    )
+    try:
+        creds = service_account.Credentials.from_service_account_file(
+            "/etc/secrets/service_account.json",
+            scopes=["https://www.googleapis.com/auth/drive"]
+        )
 
-    service = build("drive", "v3", credentials=creds)
+        service = build("drive", "v3", credentials=creds)
 
-    file_metadata = {
-        "name": filepath.name,
-        "parents": [DRIVE_FOLDER_ID]
-    }
+        file_metadata = {
+            "name": filepath.name,
+            "parents": [DRIVE_FOLDER_ID]
+        }
 
-    media = MediaFileUpload(str(filepath), mimetype="application/pdf")
+        media = MediaFileUpload(str(filepath), mimetype="application/pdf")
 
-    service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields="id"
-    ).execute()
+        file = service.files().create(
+            body=file_metadata,
+            media_body=media,
+            fields="id"
+        ).execute()
+
+        print("UPLOAD DRIVE OK:", file.get("id"))
+
+    except Exception as e:
+        print("ERREUR UPLOAD DRIVE >>>", str(e))
 
 # ==== ROUTES ====
 @app.get("/")
