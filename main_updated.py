@@ -70,8 +70,13 @@ def make_pdf(data, filename):
     return path
 
 # ==== GOOGLE DRIVE UPLOAD ====
+
 def upload_to_drive(filepath):
     try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+
         creds = service_account.Credentials.from_service_account_file(
             "/etc/secrets/service_account.json",
             scopes=["https://www.googleapis.com/auth/drive"]
@@ -86,16 +91,17 @@ def upload_to_drive(filepath):
 
         media = MediaFileUpload(str(filepath), mimetype="application/pdf")
 
-        file = service.files().create(
+        service.files().create(
             body=file_metadata,
-            media_body=media,
-            fields="id"
+            media_body=media
         ).execute()
 
-        print("UPLOAD DRIVE OK:", file.get("id"))
+        print("DRIVE OK")
 
     except Exception as e:
-        print("ERREUR UPLOAD DRIVE >>>", str(e))
+        print("DRIVE ERROR:", str(e))
+        # empêche le crash du serveur
+        return
 
 # ==== ROUTES ====
 @app.get("/")
