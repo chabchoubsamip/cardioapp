@@ -100,21 +100,35 @@ def make_pdf(data, filename):
 # ==== GOOGLE DRIVE ====
 def upload_to_drive(filepath):
     try:
+        from google.oauth2 import service_account
+        from googleapiclient.discovery import build
+        from googleapiclient.http import MediaFileUpload
+
+        DRIVE_FOLDER_ID = "1ERp9e96G1CnQPjKg70jn4I8fCWh0rlcx"
+
         creds = service_account.Credentials.from_service_account_file(
             "/etc/secrets/service_account.json",
             scopes=["https://www.googleapis.com/auth/drive"]
         )
+
         service = build("drive", "v3", credentials=creds)
 
-        file_metadata = {"name": filepath.name, "parents": [DRIVE_FOLDER_ID]}
+        file_metadata = {
+            "name": filepath.name,
+            "parents": [DRIVE_FOLDER_ID]
+        }
+
         media = MediaFileUpload(str(filepath), mimetype="application/pdf")
 
-        service.files().create(body=file_metadata, media_body=media).execute()
+        service.files().create(
+            body=file_metadata,
+            media_body=media
+        ).execute()
+
         print("DRIVE OK")
 
     except Exception as e:
-        print("DRIVE ERROR:", e)
-
+        print("DRIVE ERROR:", str(e))
 # ==== ADMIN ====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
