@@ -1,57 +1,122 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
-<meta charset="UTF-8">
-<title>Fiche</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fiche patient</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 12px; }
+    label { display:block; margin: 10px 0 4px; }
+    input, select, button, textarea { width: 100%; padding: 10px; box-sizing: border-box; }
+    button { cursor: pointer; margin-top: 14px; }
+    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .note { font-size: 0.92rem; opacity: 0.85; }
+    .ok { margin-top: 14px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
+    a { word-break: break-all; }
+  </style>
 </head>
-
 <body>
 
 <h2>Fiche patient</h2>
+<p class="note">
+  Après envoi, un PDF est généré sur le serveur. Vous verrez un lien de téléchargement.
+</p>
 
 <form id="f">
+  <div class="row">
+    <div>
+      <label>Nom</label>
+      <input name="nom" required />
+    </div>
+    <div>
+      <label>Prénom</label>
+      <input name="prenom" required />
+    </div>
+  </div>
 
-Nom <input name="nom" required><br><br>
-Prenom <input name="prenom" required><br><br>
+  <label>Tabac</label>
+  <select name="tabac">
+    <option value="oui">Oui</option>
+    <option value="non">Non</option>
+  </select>
 
-Tabac
-<select name="tabac">
-<option>oui</option>
-<option>non</option>
-</select><br><br>
+  <label>Motif (optionnel)</label>
+  <textarea name="motif" rows="3" placeholder="Ex: douleur thoracique, palpitations..."></textarea>
 
-<button type="submit">Envoyer</button>
+  <label>
+    <input type="checkbox" name="consent" required />
+    Je confirme l'envoi des informations pour génération du PDF.
+  </label>
 
+  <button id="btn" type="submit">Envoyer</button>
 </form>
 
+<div id="result" class="ok" style="display:none;"></div>
+
 <script>
-document.getElementById("f").addEventListener("submit", async function(e){
+  // IMPORTANT :
+  // - Si ton index.html est hébergé sur un AUTRE site (Netlify/GitHub Pages),
+  //   mets ici l’URL du backend Render :
+  //     const API_BASE = "https://cardioapp-oen0.onrender.com";
+  // - Si index.html est servi par le backend Render, laisse vide ("") :
+  const API_BASE = "https://cardioapp-oen0.onrender.com";
+
+  const form = document.getElementById("f");
+  const btn = document.getElementById("btn");
+  const result = document.getElementById("result");
+
+  form.addEventListener("submit", async (e) => {
     e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = "Envoi…";
+    result.style.display = "none";
+    result.textContent = "";
 
     const f = e.target;
 
-    const data = {
-        administratif:{
-            nom:f.nom.value,
-            prenom:f.prenom.value
-        },
-        motif_consultation:{motif:""},
-        facteurs_risque:{
-            tabac:f.tabac.value
-        },
-        antecedents_cardio:{},
-        traitement_ocr:"",
-        consentement:{ok:true}
+    const payload = {
+      administratif: { nom: f.nom.value, prenom: f.prenom.value },
+      motif_consultation: { motif: f.motif.value || "" },
+      facteurs_risque: { tabac: f.tabac.value },
+      antecedents_cardio: {},
+      traitement_ocr: "",
+      consentement: { ok: !!f.consent.checked }
     };
 
-    await fetch("/submit",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(data)
-    });
+    try {
+      const r = await fetch(`${API_BASE}/submit`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
-    alert("Fiche enregistrée");
-});
+      if (!r.ok) {
+        const t = await r.text();
+        throw new Error(`Erreur serveur (${r.status}) : ${t}`);
+      }
+
+      const data = await r.json();
+      const pdfLink = `${API_BASE}${data.pdf_url}`;
+
+      result.innerHTML = `
+        <b>✅ Fiche enregistrée</b><br><br>
+        <div>PDF :</div>
+        <div><a href="${pdfLink}" target="_blank" rel="noopener">${pdfLink}</a></div>
+        <br>
+        <div>Admin :</div>
+        <div><a href="${API_BASE}${data.admin_url}" target="_blank" rel="noopener">${API_BASE}${data.admin_url}</a></div>
+      `;
+      result.style.display = "block";
+
+      form.reset();
+    } catch (err) {
+      result.textContent = "❌ " + (err?.message || err);
+      result.style.display = "block";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Envoyer";
+    }
+  });
 </script>
 
 </body>
