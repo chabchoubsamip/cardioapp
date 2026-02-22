@@ -1,122 +1,199 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fiche patient</title>
-  <style>
-    body { font-family: Arial, sans-serif; max-width: 720px; margin: 24px auto; padding: 0 12px; }
-    label { display:block; margin: 10px 0 4px; }
-    input, select, button, textarea { width: 100%; padding: 10px; box-sizing: border-box; }
-    button { cursor: pointer; margin-top: 14px; }
-    .row { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .note { font-size: 0.92rem; opacity: 0.85; }
-    .ok { margin-top: 14px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; }
-    a { word-break: break-all; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Demande de consultation cardiologique</title>
+
+<style>
+body{font-family:Arial;background:#f4f6f8;margin:0;padding:20px;}
+.container{max-width:720px;margin:auto;background:white;padding:20px;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,0.1);}
+h2{background:#1f6fb2;color:white;padding:10px;border-radius:6px;}
+.row{display:flex;align-items:center;justify-content:space-between;margin:8px 0;}
+.row label{flex:1;}
+.choices{display:flex;gap:20px;}
+input,select,textarea{width:100%;padding:10px;margin-top:5px;border-radius:6px;border:1px solid #ccc;}
+button{margin-top:20px;background:#1f6fb2;color:white;border:none;padding:14px;font-size:16px;border-radius:8px;cursor:pointer;}
+button:hover{background:#165b93;}
+.small{font-size:13px;color:#555;}
+</style>
 </head>
+
 <body>
+<div class="container">
 
-<h2>Fiche patient</h2>
-<p class="note">
-  Après envoi, un PDF est généré sur le serveur. Vous verrez un lien de téléchargement.
-</p>
+<h1>Demande de consultation cardiologique</h1>
 
-<form id="f">
-  <div class="row">
-    <div>
-      <label>Nom</label>
-      <input name="nom" required />
-    </div>
-    <div>
-      <label>Prénom</label>
-      <input name="prenom" required />
-    </div>
-  </div>
+<form id="form">
 
-  <label>Tabac</label>
-  <select name="tabac">
-    <option value="oui">Oui</option>
-    <option value="non">Non</option>
-  </select>
+<!-- ADMIN -->
+<h2>Données administratives</h2>
 
-  <label>Motif (optionnel)</label>
-  <textarea name="motif" rows="3" placeholder="Ex: douleur thoracique, palpitations..."></textarea>
+<label>Date de naissance</label>
+<input type="date" name="dob" required>
 
-  <label>
-    <input type="checkbox" name="consent" required />
-    Je confirme l'envoi des informations pour génération du PDF.
-  </label>
+<label>Sexe</label>
+<select name="sexe" required>
+<option value="">Choisir</option>
+<option>Homme</option>
+<option>Femme</option>
+</select>
 
-  <button id="btn" type="submit">Envoyer</button>
+<label>Téléphone</label>
+<input type="tel" name="tel">
+
+<label>Email</label>
+<input type="email" name="mail">
+
+<p class="small">Aucune donnée nominative demandée.</p>
+
+<!-- MOTIF -->
+<h2>Motif de consultation</h2>
+
+<label><input type="radio" name="motif" value="Prévention" required> A — CONSULTATION DE PREVENTION</label>
+<label><input type="radio" name="motif" value="Demande médecin"> B — CONSULTATION A LA DEMANDE D'UN AUTRE MEDECIN</label>
+<label><input type="radio" name="motif" value="Suivi"> C — CONSULTATION DE SUIVI</label>
+<label><input type="radio" name="motif" value="Symptômes nouveaux"> D — CONSULTATION POUR SYMPTOMES CARDIAQUES NOUVEAUX</label>
+
+<!-- FRCV -->
+<h2>Mes facteurs de risque cardiovasculaire</h2>
+
+<div class="row">
+<label>Tabac actuel ou arrêt &lt; 15 ans</label>
+<div class="choices">
+<label><input type="radio" name="tabac" value="oui" required> Oui</label>
+<label><input type="radio" name="tabac" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>HTA ou traitement antihypertenseur</label>
+<div class="choices">
+<label><input type="radio" name="hta" value="oui" required> Oui</label>
+<label><input type="radio" name="hta" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Diabète ou traitement antidiabétique</label>
+<div class="choices">
+<label><input type="radio" name="diabete" value="oui" required> Oui</label>
+<label><input type="radio" name="diabete" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Cholestérol ou traitement hypolipémiant</label>
+<div class="choices">
+<label><input type="radio" name="chol" value="oui" required> Oui</label>
+<label><input type="radio" name="chol" value="non"> Non</label>
+</div>
+</div>
+
+<!-- ATCD -->
+<h2>Mes antécédents cardiovasculaires</h2>
+
+<div class="row">
+<label>Arythmie (FA…)</label>
+<div class="choices">
+<label><input type="radio" name="arythmie" value="oui" required> Oui</label>
+<label><input type="radio" name="arythmie" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Infarctus / Stent / Pontage</label>
+<div class="choices">
+<label><input type="radio" name="infarctus" value="oui" required> Oui</label>
+<label><input type="radio" name="infarctus" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Insuffisance cardiaque</label>
+<div class="choices">
+<label><input type="radio" name="ic" value="oui" required> Oui</label>
+<label><input type="radio" name="ic" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Problème de valve</label>
+<div class="choices">
+<label><input type="radio" name="valve" value="oui" required> Oui</label>
+<label><input type="radio" name="valve" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Aorte dilatée non opérée</label>
+<div class="choices">
+<label><input type="radio" name="aorte" value="oui" required> Oui</label>
+<label><input type="radio" name="aorte" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Chirurgie cardiaque ancienne</label>
+<div class="choices">
+<label><input type="radio" name="chirurgie" value="oui" required> Oui</label>
+<label><input type="radio" name="chirurgie" value="non"> Non</label>
+</div>
+</div>
+
+<div class="row">
+<label>Maladie thrombo-embolique</label>
+<div class="choices">
+<label><input type="radio" name="mtev" value="oui" required> Oui</label>
+<label><input type="radio" name="mtev" value="non"> Non</label>
+</div>
+</div>
+
+<!-- TRAITEMENT -->
+<h2>Mon traitement</h2>
+<textarea name="traitement" rows="4" placeholder="Listez vos médicaments..."></textarea>
+
+<button type="submit">Envoyer une demande de consultation</button>
+
 </form>
 
-<div id="result" class="ok" style="display:none;"></div>
+<div id="msg"></div>
+
+</div>
 
 <script>
-  // IMPORTANT :
-  // - Si ton index.html est hébergé sur un AUTRE site (Netlify/GitHub Pages),
-  //   mets ici l’URL du backend Render :
-  //     const API_BASE = "https://cardioapp-oen0.onrender.com";
-  // - Si index.html est servi par le backend Render, laisse vide ("") :
-  const API_BASE = "https://cardioapp-oen0.onrender.com";
+const API="https://cardioapp-oen0.onrender.com";
 
-  const form = document.getElementById("f");
-  const btn = document.getElementById("btn");
-  const result = document.getElementById("result");
+document.getElementById("form").addEventListener("submit", async e=>{
+e.preventDefault();
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    btn.disabled = true;
-    btn.textContent = "Envoi…";
-    result.style.display = "none";
-    result.textContent = "";
+const f=e.target;
 
-    const f = e.target;
+const data={
+administratif:{dob:f.dob.value,sexe:f.sexe.value,tel:f.tel.value,mail:f.mail.value},
+motif_consultation:{motif:f.motif.value},
+facteurs_risque:{
+tabac:f.tabac.value,
+hta:f.hta.value,
+diabete:f.diabete.value,
+cholesterol:f.chol.value
+},
+antecedents_cardio:{
+arythmie:f.arythmie.value,
+infarctus:f.infarctus.value,
+insuffisance_cardiaque:f.ic.value,
+valve:f.valve.value,
+aorte:f.aorte.value,
+chirurgie:f.chirurgie.value,
+mtev:f.mtev.value
+},
+traitement_ocr:f.traitement.value,
+consentement:{ok:true}
+};
 
-    const payload = {
-      administratif: { nom: f.nom.value, prenom: f.prenom.value },
-      motif_consultation: { motif: f.motif.value || "" },
-      facteurs_risque: { tabac: f.tabac.value },
-      antecedents_cardio: {},
-      traitement_ocr: "",
-      consentement: { ok: !!f.consent.checked }
-    };
-
-    try {
-      const r = await fetch(`${API_BASE}/submit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!r.ok) {
-        const t = await r.text();
-        throw new Error(`Erreur serveur (${r.status}) : ${t}`);
-      }
-
-      const data = await r.json();
-      const pdfLink = `${API_BASE}${data.pdf_url}`;
-
-      result.innerHTML = `
-        <b>✅ Fiche enregistrée</b><br><br>
-        <div>PDF :</div>
-        <div><a href="${pdfLink}" target="_blank" rel="noopener">${pdfLink}</a></div>
-        <br>
-        <div>Admin :</div>
-        <div><a href="${API_BASE}${data.admin_url}" target="_blank" rel="noopener">${API_BASE}${data.admin_url}</a></div>
-      `;
-      result.style.display = "block";
-
-      form.reset();
-    } catch (err) {
-      result.textContent = "❌ " + (err?.message || err);
-      result.style.display = "block";
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "Envoyer";
-    }
-  });
+const r=await fetch(API+"/submit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+document.getElementById("msg").innerHTML=r.ok?"<b>Demande envoyée ✔️</b>":"Erreur ❌";
+});
 </script>
 
 </body>
