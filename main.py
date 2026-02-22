@@ -37,12 +37,19 @@ class Fiche(BaseModel):
     traitement_ocr: str = ""
     consentement: dict = {}
 
-# ==== PDF GENERATION ====
+# ==== SERVIR LE FORMULAIRE HTML ====
+@app.get("/", response_class=HTMLResponse)
+def home():
+    index_file = BASE_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"error": "index.html introuvable"}
+
+# ==== PDF ====
 def make_pdf(data, filename):
     path = PDF_DIR / filename
     c = canvas.Canvas(str(path))
-    width, height = 595, 842  # A4
-    y = height - 40
+    y = 800
 
     def line(txt, space=16):
         nonlocal y
@@ -50,85 +57,65 @@ def make_pdf(data, filename):
         y -= space
         if y < 80:
             c.showPage()
-            y = height - 40
+            y = 800
 
-    c.setFont("Helvetica-Bold", 16)
+    c.setFont("Helvetica-Bold", 14)
     line("DEMANDE DE CONSULTATION CARDIOLOGIQUE", 30)
+    c.setFont("Helvetica", 11)
 
-    c.setFont("Helvetica", 12)
-
-    # ADMIN
-    line("1. DONNEES ADMINISTRATIVES", 20)
     admin = data["administratif"]
-    line(f"Date de naissance : {admin.get('dob','')}")
+    line("1. DONNEES ADMINISTRATIVES")
+    line(f"Date naissance : {admin.get('dob','')}")
     line(f"Sexe : {admin.get('sexe','')}")
-    line(f"Telephone : {admin.get('tel','')}")
+    line(f"Tel : {admin.get('tel','')}")
     line(f"Email : {admin.get('mail','')}", 25)
 
-    # MOTIF
-    line("2. MOTIF DE CONSULTATION", 20)
-    line(f"Motif choisi : {data['motif_consultation'].get('motif','')}", 25)
+    line("2. MOTIF")
+    line(data["motif_consultation"].get("motif",""), 25)
 
-    # FRCV
-    line("3. FACTEURS DE RISQUE CARDIOVASCULAIRE", 20)
     fr = data["facteurs_risque"]
+    line("3. FACTEURS DE RISQUE")
     line(f"Tabac : {fr.get('tabac','')}")
     line(f"HTA : {fr.get('hta','')}")
     line(f"Diabete : {fr.get('diabete','')}")
     line(f"Cholesterol : {fr.get('cholesterol','')}", 25)
 
-    # ATCD
-    line("4. ANTECEDENTS CARDIOVASCULAIRES", 20)
     at = data["antecedents_cardio"]
+    line("4. ANTECEDENTS CARDIAQUES")
     line(f"Arythmie : {at.get('arythmie','')}")
-    line(f"Infarctus / Stent / Pontage : {at.get('infarctus','')}")
-    line(f"Insuffisance cardiaque : {at.get('insuffisance_cardiaque','')}")
-    line(f"Probleme de valve : {at.get('valve','')}")
-    line(f"Aorte dilatee : {at.get('aorte','')}")
-    line(f"Chirurgie cardiaque ancienne : {at.get('chirurgie','')}")
-    line(f"Maladie thrombo-embolique : {at.get('mtev','')}", 25)
+    line(f"Infarctus : {at.get('infarctus','')}")
+    line(f"IC : {at.get('insuffisance_cardiaque','')}")
+    line(f"Valve : {at.get('valve','')}")
+    line(f"Aorte : {at.get('aorte','')}")
+    line(f"Chirurgie : {at.get('chirurgie','')}")
+    line(f"MTEV : {at.get('mtev','')}", 25)
 
-    # TRAITEMENT
-    line("5. TRAITEMENT ACTUEL", 20)
-    traitement = data.get("traitement_ocr", "")
-    for t in traitement.split("\n"):
+    line("5. TRAITEMENT")
+    for t in data.get("traitement_ocr","").split("\n"):
         line(t)
 
     c.save()
     return path
 
-# ==== GOOGLE DRIVE UPLOAD ====
+# ==== GOOGLE DRIVE ====
 def upload_to_drive(filepath):
     try:
         creds = service_account.Credentials.from_service_account_file(
             "/etc/secrets/service_account.json",
             scopes=["https://www.googleapis.com/auth/drive"]
         )
-
         service = build("drive", "v3", credentials=creds)
 
-        file_metadata = {
-            "name": filepath.name,
-            "parents": [DRIVE_FOLDER_ID]
-        }
-
+        file_metadata = {"name": filepath.name, "parents": [DRIVE_FOLDER_ID]}
         media = MediaFileUpload(str(filepath), mimetype="application/pdf")
 
-        service.files().create(
-            body=file_metadata,
-            media_body=media
-        ).execute()
-
+        service.files().create(body=file_metadata, media_body=media).execute()
         print("DRIVE OK")
 
     except Exception as e:
-        print("DRIVE ERROR:", str(e))
+        print("DRIVE ERROR:", e)
 
-# ==== ROUTES ====
-@app.get("/")
-def home():
-    return {"message": "CardioApp API active"}
-
+# ==== ADMIN ====
 @app.get("/admin", response_class=HTMLResponse)
 def admin():
     files = sorted([f.name for f in PDF_DIR.glob("*.pdf")], reverse=True)
@@ -141,19 +128,14 @@ def admin():
 def get_pdf(filename: str):
     path = PDF_DIR / filename
     if not path.exists():
-        raise HTTPException(status_code=404, detail="PDF introuvable")
+        raise HTTPException(status_code=404)
     return FileResponse(path, media_type="application/pdf")
 
+# ==== SUBMIT ====
 @app.post("/submit")
 def submit(fiche: Fiche):
     data = fiche.dict()
-
     filename = f"fiche_{uuid.uuid4().hex}.pdf"
     pdf_path = make_pdf(data, filename)
-
     upload_to_drive(pdf_path)
-
-    return JSONResponse({
-        "status": "success",
-        "filename": filename
-    })
+    return JSONResponse({"status": "ok"})
